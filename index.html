@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Family Hub</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#2f6f5e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Family Hub">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--tx:#1f2328;--mut:#6b7280;--bd:#e5e2d9;--ac:#2f6f5e;--acx:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181a;--card:#1f2326;--tx:#ecebe6;--mut:#9aa0a6;--bd:#2f3438;--ac:#5fb59d;--acx:#10201b}}
+:root[data-theme="dark"]{--bg:#15181a;--card:#1f2326;--tx:#ecebe6;--mut:#9aa0a6;--bd:#2f3438;--ac:#5fb59d;--acx:#10201b}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:14px 16px 0;display:flex;justify-content:space-between;align-items:baseline;max-width:1000px;margin:auto}
+h1{font-size:20px;margin:0}small,.mut{color:var(--mut)}
+nav{display:flex;gap:6px;padding:10px 16px;max-width:1000px;margin:auto;overflow-x:auto}
+nav button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:7px 12px;border-radius:99px;cursor:pointer;white-space:nowrap}
+nav button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+main{max-width:1000px;margin:auto;padding:0 16px 40px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px}
+.mh{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:22px}
+.pts{margin-left:auto;font-weight:700;color:var(--ac)}
+.bar{height:6px;background:var(--bd);border-radius:9px;overflow:hidden;margin:4px 0 10px}.bar i{display:block;height:100%;background:var(--ac)}
+.row{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--bd)}
+.row label{flex:1;display:flex;gap:8px;align-items:center;cursor:pointer}
+.row.done span{text-decoration:line-through;color:var(--mut)}
+input[type=checkbox]{width:19px;height:19px;accent-color:var(--ac)}
+input,select{font:inherit;padding:7px 9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);min-width:0}
+.add{display:flex;gap:6px;margin-top:8px}.add input{flex:1}
+button.b{background:var(--ac);color:var(--acx);border:0;padding:7px 12px;border-radius:8px;cursor:pointer;font:inherit}
+button.x{background:none;border:0;color:var(--mut);cursor:pointer;font-size:16px}
+.tag{font-size:12px;background:var(--bg);border:1px solid var(--bd);border-radius:99px;padding:1px 8px;color:var(--mut)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal div.d{min-height:56px;background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:3px 5px;font-size:12px;cursor:pointer;overflow:hidden}
+.cal div.d.t{border-color:var(--ac)}.cal div.d.s{outline:2px solid var(--ac)}
+.cal .h{text-align:center;color:var(--mut);font-size:12px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:2px}
+.bar2{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
+#st{font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:2px;font-size:12px;border:1px solid var(--bd);border-radius:99px;padding:1px 7px;margin:2px 2px 0 0;cursor:pointer}.chip input{width:13px;height:13px}.chips{margin-top:6px}.rem{background:var(--card);border:1px dashed var(--ac);border-radius:14px;padding:10px 14px;margin-bottom:12px}
+</style></head><body>
+<header><h1>🏠 Family Hub</h1><small id="st" style="cursor:pointer" title="Tap to change family code" onclick="setCode()"></small></header>
+<nav id="nav"></nav><main id="app"></main>
+<script src="firebase-config.js"></script>
+<script>
+const COLORS=["#d9efe8","#fde4d0","#e3e0fb","#fbe0e8","#fff1b8","#d6ecfb"];
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const seed=()=>({members:[{id:"m1",name:"Dad",emoji:"👨",c:0,pts:0},{id:"m2",name:"Mom",emoji:"👩",c:1,pts:0},{id:"m3",name:"Kid",emoji:"🧒",c:2,pts:0}],
+acts:[{id:uid(),m:"m3",t:"Brush teeth",p:2},{id:uid(),m:"m3",t:"Homework",p:5},{id:uid(),m:"m1",t:"Exercise",p:3},{id:uid(),m:"m2",t:"Read 20 minutes",p:3}],
+pin:"",remAt:"18:00",reqs:[],checks:{},tasks:[],events:[],rewards:[{id:uid(),t:"Pick the movie night film",c:20},{id:uid(),t:"Ice cream outing",c:40}],hist:[]});
+let S=seed(),tab="home",calM=new Date(),selD=today(),db=null,ref=null,saving=false,P=false,wk=0,done={};
+const DN=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],due=(a,d=new Date().getDay())=>!a.days||!a.days.length||a.days.includes(d);
+const hp=s=>{let h=5381;for(const c of "fh"+s)h=(h*33^c.charCodeAt(0))>>>0;return String(h)};
+function norm(){S.reqs=S.reqs||[];S.remAt=S.remAt||"18:00";S.pin=S.pin||"";S.hist=S.hist||[]}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const mem=id=>S.members.find(m=>m.id==id)||{name:"?",emoji:"❔",c:0};
+function status(t){$("#st").textContent=t}
+let fbSet=null;
+function setCode(){const c=prompt("Enter your family code (same on every device, at least 8 characters):",localStorage.getItem("fhcode")||"");if(c&&c.trim().length>=8){localStorage.setItem("fhcode",c.trim());location.reload()}else if(c)alert("Please use at least 8 characters.")}
+async function load(){
+  try{const j=localStorage.getItem("fh");if(j)S=JSON.parse(j)}catch(e){}
+  render();
+  const cfg=window.FH_FIREBASE;
+  if(!cfg||!cfg.apiKey||/^PASTE/.test(cfg.apiKey)){status("Saved on this device only (sync not set up)");return}
+  const code=localStorage.getItem("fhcode");
+  if(!code){status("Tap here to enter the family code");setCode();return}
+  try{
+    const b="https://www.gstatic.com/firebasejs/10.12.2/";
+    const [A,Au,F]=await Promise.all([import(b+"firebase-app.js"),import(b+"firebase-auth.js"),import(b+"firebase-firestore.js")]);
+    const app=A.initializeApp(cfg);await Au.signInAnonymously(Au.getAuth(app));
+    ref=F.doc(F.getFirestore(app),"families",code);fbSet=F.setDoc;
+    F.onSnapshot(ref,s=>{
+      if(s.exists()&&s.data().json){try{S=JSON.parse(s.data().json);localStorage.setItem("fh",JSON.stringify(S))}catch(e){}}
+      else if(!saving){save()}
+      status("Synced with family");render();
+    },()=>status("Sync problem \u2013 saved on this device"));
+  }catch(e){status("Offline \u2013 saved on this device")}
+}
+function save(){
+  try{localStorage.setItem("fh",JSON.stringify(S))}catch(e){}
+  if(ref&&fbSet){saving=true;fbSet(ref,{json:JSON.stringify(S)}).catch(()=>status("Sync failed")).finally(()=>saving=false)}
+}
+function upd(f){f();save();render()}
+function award(mid,n,why){const m=mem(mid);if(m.id){m.pts=Math.max(0,m.pts+n)}}
+// Actions
+function toggleAct(id){upd(()=>{const k=today();S.checks[k]=S.checks[k]||{};const a=S.acts.find(x=>x.id==id);
+  if(S.checks[k][id]){delete S.checks[k][id];award(a.m,-a.p)}else{S.checks[k][id]=1;award(a.m,a.p)}
+  const keys=Object.keys(S.checks).sort();while(keys.length>30)delete S.checks[keys.shift()]})}
+function addAct(mid){const i=$("#a"+mid),p=$("#p"+mid);if(!i.value.trim())return;const days=[...document.querySelectorAll(".dc"+mid+":checked")].map(x=>+x.value);upd(()=>S.acts.push({id:uid(),m:mid,t:i.value.trim(),p:+p.value||1,days,cd:today()}))}
+function delAct(id){upd(()=>S.acts=S.acts.filter(a=>a.id!=id))}
+function addTask(){const t=$("#tt").value.trim();if(!t)return;upd(()=>S.tasks.push({id:uid(),t,m:$("#tm").value,d:$("#td").value,p:+$("#tp").value||5,done:0}))}
+function togTask(id){upd(()=>{const t=S.tasks.find(x=>x.id==id);t.done=t.done?0:1;t.dd=t.done?today():"";award(t.m,t.done?t.p:-t.p)})}
+function delTask(id){upd(()=>{const t=S.tasks.find(x=>x.id==id);if(t&&t.done)award(t.m,-t.p);S.tasks=S.tasks.filter(x=>x.id!=id)})}
+function addEv(){const t=$("#et").value.trim();if(!t)return;upd(()=>S.events.push({id:uid(),t,d:selD,tm:$("#etm").value,m:$("#em").value}))}
+function delEv(id){upd(()=>S.events=S.events.filter(e=>e.id!=id))}
+function addRew(){if(!P)return;const t=$("#rt").value.trim();if(!t)return;upd(()=>S.rewards.push({id:uid(),t,c:+$("#rc").value||10}))}
+function delRew(id){if(!P)return;upd(()=>S.rewards=S.rewards.filter(r=>r.id!=id))}
+function request(id){const r=S.rewards.find(x=>x.id==id),m=mem($("#rw").value);
+  if(m.pts<r.c){alert(m.name+" needs "+(r.c-m.pts)+" more points.");return}
+  upd(()=>S.reqs.push({id:uid(),m:m.id,r:id,d:today()}))}
+function approve(id){if(!P)return;const q=S.reqs.find(x=>x.id==id),r=q&&S.rewards.find(x=>x.id==q.r),m=q&&mem(q.m);
+  if(!r||!m.id)return deny(id);
+  if(m.pts<r.c){alert(m.name+" needs "+(r.c-m.pts)+" more points.");return}
+  upd(()=>{m.pts-=r.c;S.hist.unshift({d:today(),t:m.name+" redeemed "+r.t+" (−"+r.c+")"});S.hist=S.hist.slice(0,15);S.reqs=S.reqs.filter(x=>x.id!=id)})}
+function deny(id){if(!P)return;upd(()=>S.reqs=S.reqs.filter(x=>x.id!=id))}
+function unlock(){if(!S.pin){const p=prompt("Set a parent PIN (4+ digits):");if(!p||p.length<4)return;upd(()=>S.pin=hp(p));P=true;render();return}
+  const p=prompt("Parent PIN:");if(p&&hp(p)==S.pin){P=true;render()}else if(p)alert("Wrong PIN")}
+function lock(){P=false;render()}
+function chPin(){if(!P)return;const p=prompt("New PIN (4+ digits):");if(p&&p.length>=4)upd(()=>S.pin=hp(p))}
+function setRem(v){if(P&&v)upd(()=>S.remAt=v)}
+function alerts(){try{Notification.requestPermission().then(r=>alert(r=="granted"?"Alerts are on while this page is open.":"Alerts are not allowed here; in-page reminders still work."))}catch(e){alert("This browser doesn’t support alerts; in-page reminders still work.")}}
+function notify(t){try{if(window.Notification&&Notification.permission=="granted")new Notification("Family Hub",{body:t})}catch(e){}}
+function addMem(){if(!P)return;const n=$("#mn").value.trim();if(!n)return;upd(()=>S.members.push({id:uid(),name:n,emoji:$("#me").value||"🙂",c:S.members.length%COLORS.length,pts:0}))}
+function delMem(id){if(!P||!confirm("Remove this member and their items?"))return;upd(()=>{S.members=S.members.filter(m=>m.id!=id);S.acts=S.acts.filter(a=>a.m!=id);S.tasks=S.tasks.filter(t=>t.m!=id)})}
+// Views
+const kd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+function actRow(a,ch){const d=due(a);return `<div class="row ${ch[a.id]?"done":""}" style="${d?"":"opacity:.5"}"><label><input type="checkbox" ${ch[a.id]?"checked":""} ${d?"":"disabled"} onchange="toggleAct('${a.id}')"><span>${esc(a.t)}</span></label>${a.days&&a.days.length?`<span class="tag">${a.days.map(x=>DN[x]).join(" ")}</span>`:""}<span class="tag">+${a.p}</span><button class="x" title="Remove" onclick="delAct('${a.id}')">✕</button></div>`}
+function parBtn(){return P?`<button class="x" onclick="lock()">🔓 Parent mode on · lock</button>`:`<button class="b" onclick="unlock()">🔒 Parent mode</button>`}
+function reqBox(){if(!S.reqs.length)return "";return `<div class="rem"><b>⏳ Waiting for parent approval</b>`+S.reqs.map(q=>{const r=S.rewards.find(x=>x.id==q.r)||{t:"(removed)",c:0},m=mem(q.m);return `<div class="row"><span style="flex:1">${esc(m.emoji+" "+m.name)} → ${esc(r.t)} <span class="tag">${r.c} pts</span></span>${P?`<button class="b" onclick="approve('${q.id}')">Approve</button><button class="x" onclick="deny('${q.id}')">Deny</button>`:""}</div>`}).join("")+(P?"":`<small>Parent mode is needed to approve.</small>`)+`</div>`}
+function remList(){const now=new Date(),k=kd(now),hm=String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0"),k2=kd(new Date(now.getTime()+864e5)),ch=S.checks[k]||{},L=[];
+  S.tasks.forEach(t=>{if(t.done||!t.d)return;if(t.d<k)L.push("⚠ Overdue: "+t.t+" ("+mem(t.m).name+")");else if(t.d==k)L.push("📌 Due today: "+t.t+" ("+mem(t.m).name+")")});
+  S.events.forEach(e=>{if(e.d==k&&(!e.tm||e.tm>=hm))L.push("📅 Today"+(e.tm?" "+e.tm:"")+": "+e.t);else if(e.d==k2)L.push("📅 Tomorrow"+(e.tm?" "+e.tm:"")+": "+e.t)});
+  if(hm>=S.remAt)S.members.forEach(m=>{const n=S.acts.filter(a=>a.m==m.id&&due(a)&&!ch[a.id]).length;if(n)L.push("⏰ "+m.name+" still has "+n+" unfinished "+(n>1?"activities":"activity")+" today")});
+  return L}
+function remBanner(){const L=remList();return L.length?`<div class="rem"><b>🔔 Reminders</b>${L.map(x=>`<div class="row">${esc(x)}</div>`).join("")}</div>`:""}
+function ping(){const now=new Date(),k=kd(now);
+  S.events.forEach(e=>{if(e.d!=k||!e.tm||done[e.id])return;const[h,mi]=e.tm.split(":"),df=(new Date(now.getFullYear(),now.getMonth(),now.getDate(),+h,+mi)-now)/6e4;if(df<=15&&df>-1){done[e.id]=1;notify("📅 "+e.t+" at "+e.tm)}});
+  const hm=String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
+  if(hm>=S.remAt&&!done["r"+k]){done["r"+k]=1;const n=remList().filter(x=>x[0]=="⏰");if(n.length)notify(n.join("\n"))}
+  if(tab=="home"&&!(document.activeElement&&document.activeElement.id))render()}
+function weekly(){
+  const base=new Date();base.setDate(base.getDate()-((base.getDay()+6)%7)+wk*7);
+  const days=[...Array(7)].map((_,i)=>{const d=new Date(base);d.setDate(base.getDate()+i);return d}),ks=days.map(kd),t0=today();
+  const rows=S.members.map(m=>{let pts=0,sched=0,dn=0;
+    days.forEach((d,i)=>{if(ks[i]>t0)return;const ch=S.checks[ks[i]]||{};S.acts.filter(a=>a.m==m.id&&due(a,d.getDay())&&(!a.cd||a.cd<=ks[i])).forEach(a=>{sched++;if(ch[a.id]){dn++;pts+=a.p}})});
+    const tk=S.tasks.filter(t=>t.m==m.id&&t.done&&t.dd&&ks.includes(t.dd)),tp=tk.reduce((s,t)=>s+t.p,0);
+    return {m,pts,tp,dn,sched,tk:tk.length}}).sort((a,b)=>(b.pts+b.tp)-(a.pts+a.tp));
+  return `<div class="bar2"><button class="b" onclick="wk--;render()">‹</button><b>${ks[0]} → ${ks[6]}${wk==0?" (this week)":""}</b><button class="b" onclick="wk=Math.min(0,wk+1);render()">›</button></div><div class="grid">`+rows.map((r,i)=>{const pc=r.sched?Math.round(r.dn/r.sched*100):0;return `<div class="card"><div class="mh"><div class="av" style="background:${COLORS[r.m.c]}">${esc(r.m.emoji)}</div><b>${esc(r.m.name)}</b><div class="pts">${["🥇","🥈","🥉"][i]||""} ${r.pts+r.tp} pts</div></div><div class="bar"><i style="width:${pc}%"></i></div><small>Activities ${r.dn}/${r.sched} (${pc}%) · +${r.pts} pts<br>Tasks done ${r.tk} · +${r.tp} pts<br>Balance now ⭐ ${r.m.pts}</small></div>`}).join("")+`</div><p class="mut">History is kept for about 30 days. Points use each activity’s current value.</p>`}
+const opts=(all)=>(all?'<option value="all">Everyone</option>':'')+S.members.map(m=>`<option value="${m.id}">${esc(m.emoji+" "+m.name)}</option>`).join("");
+function home(){
+  const k=today(),ch=S.checks[k]||{};
+  return remBanner()+`<p class="mut">Today · ${new Date().toDateString()} · checklists reset every day</p><div class="grid">`+S.members.map(m=>{
+    const all=S.acts.filter(a=>a.m==m.id),as=all.filter(a=>due(a)),dn=as.filter(a=>ch[a.id]).length,pc=as.length?Math.round(dn/as.length*100):0;
+    const tk=S.tasks.filter(t=>t.m==m.id&&!t.done).length;
+    return `<div class="card"><div class="mh"><div class="av" style="background:${COLORS[m.c]}">${esc(m.emoji)}</div><div><b>${esc(m.name)}</b><br><small>${dn}/${as.length} done · ${tk} open tasks</small></div><div class="pts">⭐ ${m.pts}</div></div>
+    <div class="bar"><i style="width:${pc}%"></i></div>`+
+    all.map(a=>actRow(a,ch)).join("")+
+    `<div class="add"><input id="a${m.id}" placeholder="New daily activity" onkeydown="if(event.key=='Enter')addAct('${m.id}')"><input id="p${m.id}" type="number" value="3" min="1" style="width:56px" title="Points"><button class="b" onclick="addAct('${m.id}')">Add</button></div><div class="chips"><small>Repeat on (none = every day):</small> ${DN.map((n,i)=>`<label class="chip"><input type="checkbox" class="dc${m.id}" value="${i}">${n}</label>`).join("")}</div></div>`}).join("")+`</div>`;
+}
+function tasks(){
+  const L=S.tasks.slice().sort((a,b)=>a.done-b.done||(a.d||"9").localeCompare(b.d||"9"));
+  return `<div class="card"><div class="bar2"><input id="tt" placeholder="New task" style="flex:1;min-width:150px"><select id="tm">${opts()}</select><input id="td" type="date"><input id="tp" type="number" value="5" min="1" style="width:60px" title="Points"><button class="b" onclick="addTask()">Add task</button></div>`+
+  (L.length?L.map(t=>{const m=mem(t.m);return `<div class="row ${t.done?"done":""}"><label><input type="checkbox" ${t.done?"checked":""} onchange="togTask('${t.id}')"><span>${esc(t.t)}</span></label><span class="tag">${esc(m.emoji+" "+m.name)}</span>${t.d?`<span class="tag ${!t.done&&t.d<today()?"":""}">${t.d<today()&&!t.done?"⚠ ":""}${t.d}</span>`:""}<span class="tag">+${t.p}</span><button class="x" onclick="delTask('${t.id}')">✕</button></div>`}).join(""):'<p class="mut">No tasks yet.</p>')+`</div>`;
+}
+function calendar(){
+  const y=calM.getFullYear(),mo=calM.getMonth(),first=new Date(y,mo,1).getDay(),n=new Date(y,mo+1,0).getDate();
+  let c=["S","M","T","W","T","F","S"].map(x=>`<div class="h">${x}</div>`).join("")+"<div></div>".repeat(first);
+  for(let d=1;d<=n;d++){const k=y+"-"+String(mo+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+    const ev=S.events.filter(e=>e.d==k),tk=S.tasks.filter(t=>t.d==k&&!t.done);
+    c+=`<div class="d ${k==today()?"t":""} ${k==selD?"s":""}" onclick="selD='${k}';render()">${d}<br>${ev.concat(tk).slice(0,6).map(e=>`<span class="dot" style="background:${e.m=="all"?"var(--ac)":COLORS[mem(e.m).c]};border:1px solid var(--bd)"></span>`).join("")}</div>`}
+  const ev=S.events.filter(e=>e.d==selD).sort((a,b)=>(a.tm||"").localeCompare(b.tm||"")),tk=S.tasks.filter(t=>t.d==selD);
+  return `<div class="bar2"><button class="b" onclick="calM=new Date(${y},${mo-1},1);render()">‹</button><b>${calM.toLocaleString("en",{month:"long",year:"numeric"})}</b><button class="b" onclick="calM=new Date(${y},${mo+1},1);render()">›</button></div><div class="cal">${c}</div>
+  <div class="card" style="margin-top:12px"><b>${selD}</b>`+
+  ev.map(e=>`<div class="row"><span style="flex:1">${e.tm?esc(e.tm)+" · ":""}${esc(e.t)}</span><span class="tag">${e.m=="all"?"👪 Everyone":esc(mem(e.m).emoji+" "+mem(e.m).name)}</span><button class="x" onclick="delEv('${e.id}')">✕</button></div>`).join("")+
+  tk.map(t=>`<div class="row"><span style="flex:1">📌 Task: ${esc(t.t)}</span><span class="tag">${esc(mem(t.m).name)}</span></div>`).join("")+
+  (ev.length+tk.length?"":'<p class="mut">Nothing planned.</p>')+
+  `<div class="bar2"><input id="et" placeholder="New event" style="flex:1;min-width:140px"><input id="etm" type="time"><select id="em">${opts(1)}</select><button class="b" onclick="addEv()">Add event</button></div></div>`;
+}
+function rewards(){
+  return `<div class="card"><div class="bar2"><b>Request for:</b><select id="rw">${opts()}</select>${parBtn()}</div>${reqBox()}`+
+  S.rewards.map(r=>`<div class="row"><span style="flex:1">🎁 ${esc(r.t)}</span><span class="tag">${r.c} pts</span><button class="b" onclick="request('${r.id}')">Request</button>${P?`<button class="x" onclick="delRew('${r.id}')">✕</button>`:""}</div>`).join("")+
+  (P?`<div class="bar2"><input id="rt" placeholder="New reward" style="flex:1;min-width:140px"><input id="rc" type="number" value="25" min="1" style="width:70px"><button class="b" onclick="addRew()">Add reward</button></div>`:"")+`</div>
+  <div class="card" style="margin-top:12px"><b>Leaderboard</b>`+S.members.slice().sort((a,b)=>b.pts-a.pts).map((m,i)=>`<div class="row"><span style="flex:1">${["🥇","🥈","🥉"][i]||"•"} ${esc(m.emoji+" "+m.name)}</span><b class="pts" style="margin:0">⭐ ${m.pts}</b></div>`).join("")+
+  `</div><div class="card" style="margin-top:12px"><b>Recent redemptions</b>`+(S.hist.length?S.hist.map(h=>`<div class="row"><span style="flex:1">${esc(h.t)}</span><small>${h.d}</small></div>`).join(""):'<p class="mut">None yet.</p>')+`</div>`;
+}
+function family(){
+  return `<div class="card">`+S.members.map(m=>`<div class="row"><div class="av" style="background:${COLORS[m.c]}">${esc(m.emoji)}</div><span style="flex:1">${esc(m.name)}</span><span class="tag">⭐ ${m.pts}</span>${P?`<button class="x" onclick="delMem('${m.id}')">✕</button>`:""}</div>`).join("")+
+  (P?`<div class="bar2"><input id="me" placeholder="😀" style="width:56px"><input id="mn" placeholder="Name" style="flex:1"><button class="b" onclick="addMem()">Add member</button></div><div class="bar2"><span>⏰ Remind unfinished activities after</span><input type="time" value="${S.remAt}" onchange="setRem(this.value)"><button class="b" onclick="chPin()">Change PIN</button><button class="b" onclick="alerts()">Enable browser alerts</button></div>`:`<div class="bar2">${parBtn()}<small>Parent mode is needed to add or remove members and change settings.</small></div>`)+`</div>`;
+}
+const TABS=[["home","✅ Today"],["tasks","📋 Tasks"],["cal","📅 Calendar"],["rew","🎁 Rewards"],["week","📊 Weekly"],["fam","👪 Family"]];
+function render(){norm();
+  $("#nav").innerHTML=TABS.map(([k,l])=>`<button class="${tab==k?"on":""}" onclick="tab='${k}';render()">${l}</button>`).join("");
+  const ae=document.activeElement,id=ae&&ae.id,v=ae&&ae.value;
+  $("#app").innerHTML={home,tasks,cal:calendar,rew:rewards,week:weekly,fam:family}[tab]();
+  if(id&&document.getElementById(id)&&v){const e=document.getElementById(id);e.value=v;e.focus()}
+}
+load();setInterval(ping,6e4);
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script></body></html>
